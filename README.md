@@ -15,6 +15,7 @@ A lightweight macOS menu bar app that shows your Claude Code usage at a glance â
 ## Requirements
 
 - macOS 13 Ventura or later
+- Apple Silicon (ARM) Mac â€” Intel is not currently supported
 - [Claude Code](https://claude.ai/code) installed and signed in at least once (the app reads your OAuth token from the macOS Keychain)
 
 ## Installation
