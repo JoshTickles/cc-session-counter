@@ -12,6 +12,7 @@ class AppState: ObservableObject {
     private var timer: Timer?
     private let fetcher = UsageFetcher()
     private var sessionWatcher: LocalSessionWatcher?
+    private var defaultsObserver: NSObjectProtocol?
 
     init() {
         let watcher = LocalSessionWatcher()
@@ -25,18 +26,23 @@ class AppState: ObservableObject {
 
         Task { await refresh() }
         startPolling()
+
+        defaultsObserver = NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.scheduleNextPoll()
+            }
+        }
     }
 
     func refresh() async {
         isLoading = true
         error = nil
         do {
-            var data = try await fetcher.fetchUsage()
-            if let creds = try? KeychainManager.readClaudeCredentials() {
-                data.subscriptionType = creds.claudeAiOauth.subscriptionType ?? ""
-                data.rateLimitTier = creds.claudeAiOauth.rateLimitTier ?? ""
-            }
-            usageData = data
+            usageData = try await fetcher.fetchUsage()
         } catch {
             self.error = error.localizedDescription
         }
@@ -61,5 +67,8 @@ class AppState: ObservableObject {
 
     deinit {
         timer?.invalidate()
+        if let obs = defaultsObserver {
+            NotificationCenter.default.removeObserver(obs)
+        }
     }
 }
