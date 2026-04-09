@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import ServiceManagement
 
 struct ContentView: View {
     @EnvironmentObject var appState: AppState
@@ -213,6 +214,7 @@ struct UsageRow: View {
 struct SettingsView: View {
     @AppStorage("useMonochrome") private var useMonochrome: Bool = true
     @AppStorage("pollInterval") private var pollInterval: Double = 300
+    @State private var launchAtLogin: Bool = false
 
     private let intervalOptions: [(label: String, seconds: Double)] = [
         ("5 minutes", 300),
@@ -225,6 +227,20 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Settings")
                 .font(.headline)
+
+            Toggle("Open at login", isOn: $launchAtLogin)
+                .toggleStyle(.switch)
+                .onChange(of: launchAtLogin) { newValue in
+                    do {
+                        if newValue {
+                            try SMAppService.mainApp.register()
+                        } else {
+                            try SMAppService.mainApp.unregister()
+                        }
+                    } catch {
+                        launchAtLogin = !newValue
+                    }
+                }
 
             Toggle("Monochrome icon", isOn: $useMonochrome)
                 .toggleStyle(.switch)
@@ -252,6 +268,9 @@ struct SettingsView: View {
         }
         .padding(20)
         .frame(width: 280)
+        .onAppear {
+            launchAtLogin = SMAppService.mainApp.status == .enabled
+        }
     }
 }
 
