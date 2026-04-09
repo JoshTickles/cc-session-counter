@@ -20,6 +20,12 @@ A lightweight macOS menu bar app that shows your Claude Code usage at a glance â
 
 ## Installation
 
+### Pre-built (easiest)
+
+Download the latest `CCSessionCounter.zip` from the [Releases page](https://github.com/JoshTickles/cc-session-counter/releases), unzip, and move `CCSessionCounter.app` to your `/Applications` folder.
+
+### Build from source
+
 ```bash
 git clone https://github.com/JoshTickles/cc-session-counter.git
 cd cc-session-counter
