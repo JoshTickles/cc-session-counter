@@ -13,7 +13,10 @@ bundle: build
 	rm -rf $(BUNDLE)
 	mkdir -p $(BUNDLE)/Contents/MacOS
 	cp $(BINARY) $(BUNDLE)/Contents/MacOS/$(APP_NAME)
+	mkdir -p $(BUNDLE)/Contents/Resources
+	cp icons/AppIcon.icns $(BUNDLE)/Contents/Resources/AppIcon.icns
 	/usr/libexec/PlistBuddy -c "Add :CFBundleName string CCSessionCounter" $(PLIST)
+	/usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string AppIcon" $(PLIST)
 	/usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string com.local.ccsessioncounter" $(PLIST)
 	/usr/libexec/PlistBuddy -c "Add :CFBundleVersion string 1" $(PLIST)
 	/usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0" $(PLIST)
