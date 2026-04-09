@@ -22,9 +22,14 @@ enum FetchError: LocalizedError {
 
 class UsageFetcher {
     private let apiURL = URL(string: "https://api.anthropic.com/v1/messages?beta=true")!
+    private var cachedCredentials: ClaudeCredentials?
 
     func fetchUsage() async throws -> UsageData {
-        let credentials = try KeychainManager.readClaudeCredentials()
+        // Re-read from Keychain only if we have no cache or token is expired
+        if cachedCredentials == nil || cachedCredentials!.isExpired {
+            cachedCredentials = try KeychainManager.readClaudeCredentials()
+        }
+        let credentials = cachedCredentials!
 
         if credentials.isExpired {
             throw FetchError.tokenExpired
@@ -62,7 +67,10 @@ class UsageFetcher {
             throw FetchError.authFailed(http.statusCode)
         }
 
-        return parseHeaders(from: http)
+        var data = parseHeaders(from: http)
+        data.subscriptionType = credentials.claudeAiOauth.subscriptionType ?? ""
+        data.rateLimitTier = credentials.claudeAiOauth.rateLimitTier ?? ""
+        return data
     }
 
     private func parseHeaders(from response: HTTPURLResponse) -> UsageData {
