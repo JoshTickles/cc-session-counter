@@ -30,13 +30,19 @@ This builds a release binary, bundles the `.app`, and copies it to `/Application
 
 ## First launch — two prompts you'll see
 
-### 1. Gatekeeper warning
+### 1. Gatekeeper — "app is damaged"
 
-Because the app is not notarized, macOS will block it on first open:
+Because the app is ad-hoc signed and downloaded from the internet, macOS may show:
 
-> *"CCSessionCounter" can't be opened because Apple cannot check it for malicious software.*
+> *"CCSessionCounter.app" is damaged and can't be opened. You should move it to the Trash.*
 
-**Fix:** Right-click (or Control-click) the app in Finder → **Open** → **Open** again in the dialog. You only need to do this once.
+**Fix:** Run this in Terminal after moving the app to Applications:
+
+```bash
+xattr -cr /Applications/CCSessionCounter.app
+```
+
+Then open it normally. You only need to do this once.
 
 ### 2. Keychain access prompt
 
