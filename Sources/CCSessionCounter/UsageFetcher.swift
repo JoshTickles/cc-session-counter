@@ -24,9 +24,19 @@ class UsageFetcher {
     private let apiURL = URL(string: "https://api.anthropic.com/v1/messages?beta=true")!
     private var cachedCredentials: ClaudeCredentials?
 
+    /// Call before an explicit user-triggered refresh so the keychain is re-read,
+    /// picking up any token that Claude Code has silently refreshed.
+    func invalidateCredentials() {
+        cachedCredentials = nil
+    }
+
     func fetchUsage() async throws -> UsageData {
-        // Re-read from Keychain only if we have no cache or token is expired
-        if cachedCredentials == nil || cachedCredentials!.isExpired {
+        // Only read from Keychain when we have no cached credentials.
+        // Do NOT re-read just because the cached token is expired — the keychain
+        // holds the same expired token, so re-reading only spams the access prompt.
+        // Fresh tokens are picked up via invalidateCredentials() (explicit refresh)
+        // or after an API 401/403 (one-shot re-read below).
+        if cachedCredentials == nil {
             cachedCredentials = try KeychainManager.readClaudeCredentials()
         }
         let credentials = cachedCredentials!
@@ -64,6 +74,13 @@ class UsageFetcher {
         }
 
         if http.statusCode == 401 || http.statusCode == 403 {
+            // Token was rejected — try picking up a freshly-written token from keychain
+            // (Claude Code may have silently refreshed it). One-shot: if still bad,
+            // wait for the next explicit user refresh rather than spamming the prompt.
+            if let fresh = try? KeychainManager.readClaudeCredentials(),
+               fresh.claudeAiOauth.accessToken != credentials.claudeAiOauth.accessToken {
+                cachedCredentials = fresh
+            }
             throw FetchError.authFailed(http.statusCode)
         }
 
