@@ -24,19 +24,14 @@ class UsageFetcher {
     private let apiURL = URL(string: "https://api.anthropic.com/v1/messages?beta=true")!
     private var cachedCredentials: ClaudeCredentials?
 
-    /// Call before an explicit user-triggered refresh so the keychain is re-read,
-    /// picking up any token that Claude Code has silently refreshed.
-    func invalidateCredentials() {
-        cachedCredentials = nil
-    }
-
-    func fetchUsage() async throws -> UsageData {
-        // Only read from Keychain when we have no cached credentials.
-        // Do NOT re-read just because the cached token is expired — the keychain
-        // holds the same expired token, so re-reading only spams the access prompt.
-        // Fresh tokens are picked up via invalidateCredentials() (explicit refresh)
-        // or after an API 401/403 (one-shot re-read below).
-        if cachedCredentials == nil {
+    func fetchUsage(rereadIfExpired: Bool = false) async throws -> UsageData {
+        // Re-read keychain only when:
+        //   • no credentials cached yet (first launch), or
+        //   • explicit user refresh AND the cached token is already expired
+        //     (gives Claude Code a chance to have silently refreshed it).
+        // Never re-read on background polls just because the token is expired —
+        // the keychain has the same expired token, so it only spams the access prompt.
+        if cachedCredentials == nil || (rereadIfExpired && cachedCredentials!.isExpired) {
             cachedCredentials = try KeychainManager.readClaudeCredentials()
         }
         let credentials = cachedCredentials!

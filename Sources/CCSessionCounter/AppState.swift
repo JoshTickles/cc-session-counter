@@ -39,12 +39,10 @@ class AppState: ObservableObject {
     }
 
     func refresh() async {
-        // Re-read keychain so we pick up any token Claude Code has refreshed.
-        fetcher.invalidateCredentials()
         isLoading = true
         error = nil
         do {
-            usageData = try await fetcher.fetchUsage()
+            usageData = try await fetcher.fetchUsage(rereadIfExpired: true)
         } catch {
             self.error = error.localizedDescription
         }
